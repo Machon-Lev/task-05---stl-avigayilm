@@ -1,6 +1,4 @@
-﻿// Ex5.cpp : Defines the entry point for the application.
-
-#include <iostream>
+﻿#include <iostream>
 #include <fstream>
 #include <vector>
 #include <string>
@@ -8,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
+#include <map>
 using namespace std;
 
 // City structure to store city information
@@ -27,7 +26,6 @@ double calculateDistance(const City& city1, const City& city2, int norm) {
     else if (norm == 2) return dx + dy;                       // Manhattan distance
     else throw std::invalid_argument("Invalid norm value.");
 }
-
 
 vector<City> readData(string file_name)
 {
@@ -54,16 +52,13 @@ vector<City> readData(string file_name)
         }
     }
     return cities;
-
-
 }
-
 
 int main()
 {
     vector<City> cities;
     cities = readData("data.txt");
-    
+
     std::cout << "Welcome to the city search program!" << std::endl;
 
     while (true) {
@@ -76,20 +71,16 @@ int main()
             break;
         }
 
-        bool cityFound = false;
-        City selectedCity;
-        for (const City& city : cities) {
-            if (city.name == cityName) {
-                selectedCity = city;
-                cityFound = true;
-                break;
-            }
-        }
+        auto cityIterator = std::find_if(cities.begin(), cities.end(),
+            [&](const City& city) { return city.name == cityName; });
 
-        if (!cityFound) {
+        if (cityIterator == cities.end()) {
             std::cout << "ERROR: \"" << cityName << "\" isn't found in the city list. Please try again." << std::endl;
             continue;
         }
+
+        City selectedCity = *cityIterator;
+
         std::cout << "Please enter the wanted radius:" << std::endl;
         double radius;
         std::cin >> radius;
@@ -99,11 +90,45 @@ int main()
             continue;
         }
 
-        std::cout << "Please enter the wanted norm (0 – L2, 1 – Linf, 2 – L1):" << std::endl;
+        std::cout << "Please enter the desired norm (0 – L2, 1 – Linf, 2 – L1):" << std::endl;
         int norm;
         std::cin >> norm;
 
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Clear newline from input
 
+        // Create a multimap to store distances and corresponding cities
+        multimap<double, string> distancesToCities;
+
+        // Calculate and insert distances into the multimap
+        for (const City& city : cities) {
+            if (city.name != selectedCity.name) {
+                double distance = calculateDistance(selectedCity, city, norm);
+                if (distance <= radius) {
+                    distancesToCities.insert(std::make_pair(distance, city.name));
+                }
+            }
+        }
+
+        // Output cities within the radius and norm using multimap
+        std::cout << "Search result:" << std::endl;
+        std::cout << distancesToCities.size() << " city/cities found in the given radius." << std::endl;
+
+        int northCities = 0;
+        for (const auto& entry : distancesToCities) {
+            const City& city = *std::find_if(cities.begin(), cities.end(),
+                [&](const City& c) { return c.name == entry.second; });
+
+            if (city.y < selectedCity.y) {
+                northCities++;
+            }
+        }
+
+        std::cout << northCities << " cities are to the north of the selected city." << std::endl;
+
+        std::cout << "City list:" << std::endl;
+        for (const auto& entry : distancesToCities) {
+            std::cout << entry.second << std::endl;
+        }
     }
 
     return 0;

@@ -22,7 +22,7 @@ double calculateDistance(const City& city1, const City& city2, int norm) {
     double dy = abs(city1.y - city2.y);
 
     if (norm == 0) return std::sqrt(dx * dx + dy * dy);      // Euclidean distance
-    else if (norm == 1) return std::max(dx, dy);              // Chebyshev distance
+    else if (norm == 1) return std::max(dx, dy);              
     else if (norm == 2) return dx + dy;                       // Manhattan distance
     else throw std::invalid_argument("Invalid norm value.");
 }
@@ -71,15 +71,18 @@ int main()
             break;
         }
 
+        //find the wanted city
         auto cityIterator = std::find_if(cities.begin(), cities.end(),
             [&](const City& city) { return city.name == cityName; });
 
+        //if the city wasn't found
         if (cityIterator == cities.end()) {
             std::cout << "ERROR: \"" << cityName << "\" isn't found in the city list. Please try again." << std::endl;
             continue;
         }
 
         City selectedCity = *cityIterator;
+
 
         std::cout << "Please enter the wanted radius:" << std::endl;
         double radius;
@@ -90,7 +93,7 @@ int main()
             continue;
         }
 
-        std::cout << "Please enter the desired norm (0 – L2, 1 – Linf, 2 – L1):" << std::endl;
+        std::cout << "Please enter the desired norm (0 -L2, 1-Linf, 2-L1):" << std::endl;
         int norm;
         std::cin >> norm;
 
@@ -99,7 +102,7 @@ int main()
         // Create a multimap to store distances and corresponding cities
         multimap<double, string> distancesToCities;
 
-        // Calculate and insert distances into the multimap
+        //Calculate and insert distances into the multimap
         for (const City& city : cities) {
             if (city.name != selectedCity.name) {
                 double distance = calculateDistance(selectedCity, city, norm);
@@ -109,26 +112,40 @@ int main()
             }
         }
 
+
         // Output cities within the radius and norm using multimap
         std::cout << "Search result:" << std::endl;
         std::cout << distancesToCities.size() << " city/cities found in the given radius." << std::endl;
 
         int northCities = 0;
-        for (const auto& entry : distancesToCities) {
-            const City& city = *std::find_if(cities.begin(), cities.end(),
-                [&](const City& c) { return c.name == entry.second; });
+        //for (const auto& entry : distancesToCities) {
+        //    const City& city = *std::find_if(cities.begin(), cities.end(),
+        //        [&](const City& c) { return c.name == entry.second; });
 
-            if (city.y < selectedCity.y) {
-                northCities++;
-            }
-        }
+        //    if (city.y < selectedCity.y) {
+        //        northCities++;
+        //    }
+        //}
+
+        std::for_each(distancesToCities.begin(), distancesToCities.end(),
+            [&](const std::pair<const double, string>& entry) {
+                const City& city = *std::find_if(cities.begin(), cities.end(),
+                    [&](const City& c) { return c.name == entry.second; });
+
+                if (city.y < selectedCity.y) {
+                    northCities++;
+                }
+            });
 
         std::cout << northCities << " cities are to the north of the selected city." << std::endl;
 
         std::cout << "City list:" << std::endl;
-        for (const auto& entry : distancesToCities) {
-            std::cout << entry.second << std::endl;
-        }
+
+        std::for_each(distancesToCities.begin(), distancesToCities.end(),
+            [](const std::pair<const double, string>& entry) {
+                std::cout << entry.second << std::endl;
+            });
+
     }
 
     return 0;
